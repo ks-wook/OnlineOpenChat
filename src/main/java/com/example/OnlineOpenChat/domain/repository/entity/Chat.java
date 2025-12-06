@@ -1,5 +1,6 @@
 package com.example.OnlineOpenChat.domain.repository.entity;
 
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,23 +14,22 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "user")
-public class User {
+@Table(name = "chat")
+public class Chat {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long t_id;
+    @Column(name = "t_id")
+    private Long TID;
 
-    @Column(nullable = false)
-    private String name;
+    @Column
+    private String sender;
+
+    @Column
+    private String receiver;
 
     @Column
     private Timestamp created_at;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private UserCredentials userCredentials;
 
-    public void setCredentials(UserCredentials credentials) {
-        this.userCredentials = credentials;
-    }
 }

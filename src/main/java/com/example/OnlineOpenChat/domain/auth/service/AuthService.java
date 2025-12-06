@@ -6,17 +6,23 @@ import com.example.OnlineOpenChat.domain.auth.model.request.CreateUserRequest;
 import com.example.OnlineOpenChat.domain.auth.model.request.LoginRequest;
 import com.example.OnlineOpenChat.domain.auth.model.response.CreateUserResponse;
 import com.example.OnlineOpenChat.domain.auth.model.response.LoginResponse;
+import com.example.OnlineOpenChat.domain.repository.AuthRefreshTokenRepository;
 import com.example.OnlineOpenChat.domain.repository.UserRepository;
+import com.example.OnlineOpenChat.domain.repository.entity.AuthRefreshToken;
 import com.example.OnlineOpenChat.domain.repository.entity.User;
 import com.example.OnlineOpenChat.domain.repository.entity.UserCredentials;
-import com.example.OnlineOpenChat.security.Hasher;
-import com.example.OnlineOpenChat.security.JWTProvider;
+import com.example.OnlineOpenChat.security.auth.JWTProvider;
+import com.example.OnlineOpenChat.util.CookieUtil;
+import com.example.OnlineOpenChat.util.DateUtil;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
+import java.util.Date;
 import java.util.Optional;
 
 @Slf4j
@@ -25,34 +31,44 @@ import java.util.Optional;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final Hasher hasher;
+    private final AuthRefreshTokenRepository authRefreshTokenRepository;
+
+    private final PasswordEncoder passwordEncoder;
 
     /*
      * 유저 회원 가입 처리
      */
-    @Transactional(transactionManager = "createUserTransactionManager")
+    @Transactional
     public CreateUserResponse createUser(CreateUserRequest request) {
-        Optional<User> user = userRepository.findByName(request.name());
-        
-        if(user.isPresent()) {
-            log.error("USER_ALREADY_EXISTS: {}", request.name());
-            throw new CustomException(ErrorCode.USER_ALREADY_EXISTS);
-        }
-        
-        try {
+        log.info("유저 회원가입 요청: UserId {}", request.name());
 
+        try {
+            Optional<User> user = userRepository.findByName(request.name());
+
+            // 1) 이미 등록된 유저 닉네임인지 검사
+            if(user.isPresent()) {
+                log.error("USER_ALREADY_EXISTS: {}", request.name());
+                throw new CustomException(ErrorCode.USER_ALREADY_EXISTS);
+            }
+
+            // 2) 유저 정보 등록
             User newUser = this.newUser(request.name());
             UserCredentials newCredentials = this.newUserCredentials(request.password(), newUser);
             newUser.setCredentials(newCredentials);
 
-            // save 실패하면 내부에서 Exception 던진다.
             userRepository.save(newUser);
+
+            // 3) 회원가입 성공
+            log.info("회원가입 성공 UserId : {}", newUser.getName());
+            return new CreateUserResponse(ErrorCode.SUCCESS, (request.name()));
+        }
+        catch (CustomException e) {
+            log.error("회원가입 실패: {}", e.getMessage());
+            return new CreateUserResponse(e.getErrorCode(), null);
         }
         catch (Exception e) {
             throw new CustomException(ErrorCode.USER_SAVED_FAILED);
         }
-
-        return new CreateUserResponse((request.name()));
     }
 
     /**
@@ -60,35 +76,62 @@ public class AuthService {
      * @param request
      * @return
      */
-    public LoginResponse login(LoginRequest request) {
-        Optional<User> user = userRepository.findByName((request.name()));
+    public LoginResponse login(LoginRequest request, HttpServletResponse response) {
+        log.info("유저 로그인 요청: UserId {}", request.name());
 
-        // 유저정보 없는경우
-        if(user.isPresent()) {
-            log.error("NOT_EXIST_USER: {}", request.name());
-            throw new CustomException(ErrorCode.NOT_EXIST_USER);
-        }
+        try {
+            Optional<User> user = userRepository.findByName((request.name()));
 
-        // 로그인 정보 유효한지 검증
-        // Optional로 감싸진 객체에 대해서 map은 객체가 존재할때만 실행
-        user.map(u -> {
-            String hashingValue = hasher.getHashingValue(request.password());
+            // 유저정보 없는경우
+            if(user.isEmpty()) {
+                log.error("NOT_EXIST_USER: {}", request.name());
+                throw new CustomException(ErrorCode.NOT_EXIST_USER);
+            }
 
-            if(!u.getUserCredentials().getHashed_password().equals((hashingValue))) {
+            // 로그인 정보 유효한지 검증
+            // Optional로 감싸진 객체에 대해서 map은 객체가 존재할때만 실행
+            User u = user.orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_USER));
+
+            if (!passwordEncoder.matches(request.password(), u.getUserCredentials().getHashed_password())) {
                 throw new CustomException(ErrorCode.MIS_MATCH_PASSWORD);
             }
 
-            return hashingValue;
+            String accessToken = JWTProvider.createAccessToken((request.name()));
+            String refreshToken = JWTProvider.createRefreshToken();
 
-        }).orElseThrow(() -> new CustomException(ErrorCode.MIS_MATCH_PASSWORD));
+            // RefreshToken 만료일자
+            Date refreshTokenExpiredAt = JWTProvider.getRefreshTokenExpiredAtFromNow();
 
-        String token = JWTProvider.createRefreshToken((request.name()));
-        return new LoginResponse(ErrorCode.SUCCESS, token);
+            // refreshToken을 db에 저장
+            AuthRefreshToken authRefreshToken = AuthRefreshToken.builder()
+                    .userId(user.get().getT_id())
+                    .refreshToken(refreshToken)
+                    .expiredAt(DateUtil.dateToLocalDateTime(refreshTokenExpiredAt))
+                    .isRevoked(false)
+                    .build();
+
+
+            // 1) 발급된 refreshToken을 DB에 영속화
+            authRefreshTokenRepository.save(authRefreshToken);
+
+            // 2) Client로 돌려줄 응답에 쿠키값 세팅
+            CookieUtil.addRefreshTokenCookie(response, refreshToken, refreshTokenExpiredAt);
+
+            // 3) 로그인 성공 응답 반환 + 발급된 accessToken을 포함
+            return new LoginResponse(ErrorCode.SUCCESS, accessToken);
+
+        } catch (CustomException e) {
+            log.warn("로그인 실패: {}", e.getMessage());
+            return new LoginResponse(e.getErrorCode(), null);
+        } catch (Exception e) {
+            return new LoginResponse(ErrorCode.INTERNAL_SERVER_ERROR, null);
+        }
     }
 
     public String getUserFromToken(String token) {
-        return JWTProvider.getUserFromToken(token);
+        return JWTProvider.getUserId(token);
     }
+
     /**
      * 새 유저 생성
      * @param name
@@ -97,7 +140,7 @@ public class AuthService {
     private User newUser(String name) {
         return User.builder()
                 .name(name)
-                .create_at(new Timestamp(System.currentTimeMillis()))
+                .created_at(new Timestamp(System.currentTimeMillis()))
                 .build();
     }
 
@@ -108,7 +151,7 @@ public class AuthService {
      * @return
      */
     private UserCredentials newUserCredentials(String password, User user) {
-        String hashingValue = hasher.getHashingValue(password);
+        String hashingValue = passwordEncoder.encode(password);
 
         return UserCredentials
                 .builder()

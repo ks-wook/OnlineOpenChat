@@ -3,6 +3,7 @@ package com.example.OnlineOpenChat.domain.auth.model.response;
 
 import com.example.OnlineOpenChat.common.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Nullable;
 
 @Schema(description = "유저 계정 생성 응답")
 public record LoginResponse (
@@ -11,5 +12,6 @@ public record LoginResponse (
         ErrorCode description,
 
         @Schema(description = "jwt token")
+        @Nullable
         String token
 ) {}

@@ -17,4 +17,8 @@ public class CustomException extends RuntimeException {
         this.codeInterface = v;
     }
 
+    public ErrorCode getErrorCode() {
+        return (ErrorCode) this.codeInterface;
+    }
+
 }

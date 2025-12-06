@@ -15,7 +15,10 @@ import lombok.NoArgsConstructor;
 public class UserCredentials {
 
     @Id
+    private Long user_t_id;
+
     @OneToOne
+    @MapsId
     @JoinColumn(name = "user_t_id")
     private User user;
 

@@ -8,13 +8,14 @@ import com.example.OnlineOpenChat.domain.auth.model.response.LoginResponse;
 import com.example.OnlineOpenChat.domain.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Auth API", description = "V1 Auth API")
 @RestController
-@RequestMapping("/api/vi/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthControllerV1 {
 
@@ -36,8 +37,8 @@ public class AuthControllerV1 {
     )
     @PostMapping("/login")
     public LoginResponse loginResponse(
-            @RequestBody @Valid LoginRequest request) {
-        return authService.login(request);
+            @RequestBody @Valid LoginRequest request, HttpServletResponse httpResponse) {
+        return authService.login(request, httpResponse);
     }
 
     @Operation(

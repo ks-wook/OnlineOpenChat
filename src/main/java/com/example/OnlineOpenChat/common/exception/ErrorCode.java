@@ -18,7 +18,10 @@ public enum ErrorCode implements CodeInterface {
     // -200 ~ JWT 인증 관련
     TOKEN_IS_INVALID(-200, "TOKEN_IS_INVALID"),
     TOKEN_IS_EXPIRED(-201, "TOKEN_IS_EXPIRED"),
-    ACCESS_TOKEN_IS_NOT_EXPIRED(-202, "ACCESS_TOKEN_IS_NOT_EXPIRED");
+    ACCESS_TOKEN_IS_NOT_EXPIRED(-202, "ACCESS_TOKEN_IS_NOT_EXPIRED"),
+
+    // -500 서버 로직 관련
+    INTERNAL_SERVER_ERROR(-500, "INTERNAL_SERVER_ERROR");
 
     private final Integer code;
     private final String message;
