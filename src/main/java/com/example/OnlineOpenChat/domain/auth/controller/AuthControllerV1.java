@@ -45,7 +45,7 @@ public class AuthControllerV1 {
             summary = "토큰 값을 통해 유저명 획득",
             description = "Jwt 토큰값에서 유저명을 추출합니다."
     )
-    @GetMapping("/get-user-name/{token}")
+    @GetMapping("/verify-token/{token}")
     public String getUserFromToken(
             @PathVariable String token) {
         return authService.getUserFromToken(token);

@@ -33,7 +33,7 @@ public class WssControllerV1 {
             Message msg)
     {
         log.info("Message Received -> From: {}, To: {}, msg: {}", from, msg.getTo(), msg.getMessage());
-        chatServiceV1.saveChatMessage(msg);
+        // chatServiceV1.saveChatMessage(msg);
         return msg;
     }
 }

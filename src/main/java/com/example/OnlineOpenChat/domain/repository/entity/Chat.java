@@ -29,7 +29,8 @@ public class Chat {
     private String receiver;
 
     @Column
+    private String message;
+
+    @Column
     private Timestamp created_at;
-
-
 }
