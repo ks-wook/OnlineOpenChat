@@ -7,11 +7,11 @@
 ```
     CREATE TABLE auth_refresh_token (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
-        user_id BIGINT NOT NULL, -- user 테이블의 t_id 값
+        user_t_id BIGINT NOT NULL, -- user 테이블의 t_id 값
         refresh_token VARCHAR(255) NOT NULL, -- jwt refreshToken 값
         expired_at TIMESTAMP NOT NULL, -- 만료 일자 ex) 1일, 7일...
         is_revoked TINYINT(1) NOT NULL DEFAULT 0, -- 강제 만료 처리(로그 아웃)
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 ```
 ### user, user_credentials
