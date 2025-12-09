@@ -18,6 +18,16 @@ services:
       --collation-server=utf8mb4_unicode_ci
     volumes:
       - mysql_local_data:/var/lib/mysql
+  redis:
+    image: redis:7.0
+    container_name: redis-local
+    restart: always
+    ports:
+      - "6379:6379"
+    command: [ "redis-server", "--appendonly", "no" ]
+    volumes:
+      - redis_local_data:/data
 
 volumes:
   mysql_local_data:
+  redis_local_data:
