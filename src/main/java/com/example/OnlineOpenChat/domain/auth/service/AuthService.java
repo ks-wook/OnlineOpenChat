@@ -5,6 +5,7 @@ import com.example.OnlineOpenChat.common.exception.ErrorCode;
 import com.example.OnlineOpenChat.domain.auth.model.request.CreateUserRequest;
 import com.example.OnlineOpenChat.domain.auth.model.request.LoginRequest;
 import com.example.OnlineOpenChat.domain.auth.model.response.CreateUserResponse;
+import com.example.OnlineOpenChat.domain.auth.model.response.GetMyInfoResponse;
 import com.example.OnlineOpenChat.domain.auth.model.response.LoginResponse;
 import com.example.OnlineOpenChat.domain.repository.AuthRefreshTokenRepository;
 import com.example.OnlineOpenChat.domain.repository.UserRepository;
@@ -52,7 +53,10 @@ public class AuthService {
             }
 
             // 2) 유저 정보 등록
-            User newUser = this.newUser(request.name());
+            // 유저의 기본 닉네임은 "UserName" + #{랜덤숫자4자리} 형태로 지정
+            String defaultNickname = "UserName" + (int)(Math.random() * 9000) + 1000;
+            User newUser = this.newUser(request.name(), defaultNickname);
+
             UserCredentials newCredentials = this.newUserCredentials(request.password(), newUser);
             newUser.setCredentials(newCredentials);
 
@@ -96,7 +100,8 @@ public class AuthService {
                 throw new CustomException(ErrorCode.MIS_MATCH_PASSWORD);
             }
 
-            String accessToken = JWTProvider.createAccessToken((request.name()));
+            // 로그인 성공 - JWT 토큰 발급 -> Subject: userId Long 타입 아이디값
+            String accessToken = JWTProvider.createAccessToken(String.valueOf(user.get().getId()));
             String refreshToken = JWTProvider.createRefreshToken();
 
             // RefreshToken 만료일자
@@ -104,7 +109,7 @@ public class AuthService {
 
             // refreshToken을 db에 저장
             AuthRefreshToken authRefreshToken = AuthRefreshToken.builder()
-                    .userId(user.get().getT_id())
+                    .userId(user.get().getId())
                     .refreshToken(refreshToken)
                     .expiredAt(DateUtil.dateToLocalDateTime(refreshTokenExpiredAt))
                     .isRevoked(false)
@@ -118,16 +123,50 @@ public class AuthService {
             CookieUtil.addRefreshTokenCookie(response, refreshToken, refreshTokenExpiredAt);
 
             // 3) 로그인 성공 응답 반환 + 발급된 accessToken을 포함
-            return new LoginResponse(ErrorCode.SUCCESS, accessToken);
+            return new LoginResponse(ErrorCode.SUCCESS, accessToken, user.get().getNickname());
 
         } catch (CustomException e) {
             log.warn("로그인 실패: {}", e.getMessage());
-            return new LoginResponse(e.getErrorCode(), null);
+            return new LoginResponse(e.getErrorCode(), null, null);
         } catch (Exception e) {
-            return new LoginResponse(ErrorCode.INTERNAL_SERVER_ERROR, null);
+            return new LoginResponse(ErrorCode.INTERNAL_SERVER_ERROR, null, null);
         }
     }
 
+    /**
+     * AccessToken을 통해 내 정보 조회
+     * @param authString
+     * @return
+     */
+    public GetMyInfoResponse getMyInfoByAccessToken (String authString) {
+        try {
+
+            Long userId = JWTProvider.getUserIdAsLong(authString);
+            log.info("Get My Info 요청 UserId: {}", userId);
+            if(userId == null) {
+                throw new CustomException(ErrorCode.TOKEN_IS_INVALID);
+            }
+
+            Optional<User> user = userRepository.findById(userId);
+            log.info("Get My Info User: {}", user);
+
+            if(user.isEmpty()) {
+                throw new CustomException(ErrorCode.NOT_EXIST_USER);
+            }
+
+            return new GetMyInfoResponse(ErrorCode.SUCCESS, user.get().getNickname());
+
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, null);
+        }
+
+    }
+
+    /**
+     * 토큰에서 유저 아이디 추출
+     * @param token
+     * @return
+     */
     public String getUserFromToken(String token) {
         return JWTProvider.getUserId(token);
     }
@@ -137,9 +176,10 @@ public class AuthService {
      * @param name
      * @return
      */
-    private User newUser(String name) {
+    private User newUser(String name, String defaultNickname) {
         return User.builder()
                 .name(name)
+                .nickname(defaultNickname)
                 .created_at(new Timestamp(System.currentTimeMillis()))
                 .build();
     }

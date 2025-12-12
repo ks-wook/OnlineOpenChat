@@ -5,13 +5,16 @@ import com.example.OnlineOpenChat.common.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
 
-@Schema(description = "유저 계정 생성 응답")
+@Schema(description = "로그인 요청 응답")
 public record LoginResponse (
 
         @Schema(description = "error code")
-        ErrorCode description,
+        ErrorCode result,
 
         @Schema(description = "jwt token")
         @Nullable
-        String token
+        String token,
+
+        @Schema(description = "닉네임")
+        String nickname
 ) {}

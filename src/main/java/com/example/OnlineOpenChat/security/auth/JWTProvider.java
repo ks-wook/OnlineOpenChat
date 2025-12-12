@@ -96,6 +96,29 @@ public class JWTProvider {
     }
 
     /**
+     * 토큰에서 UserId 값 추출(Long 타입)
+     * @param token
+     * @return
+     */
+    public static Long getUserIdAsLong(String token) {
+        try {
+            String extractedToken = extractToken(token);
+            if (extractedToken == null) {
+                return null;
+            }
+
+            DecodedJWT decoded = JWT.require(Algorithm.HMAC256(secreteKey))
+                    .build()
+                    .verify(extractedToken);
+            String subject = decoded.getSubject();
+            return Long.parseLong(subject);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+
+    /**
      * Jwt 유효성 검증
      * @param token
      * @return

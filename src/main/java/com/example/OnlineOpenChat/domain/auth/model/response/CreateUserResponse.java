@@ -8,7 +8,7 @@ import jakarta.annotation.Nullable;
 @Schema(description = "유저 계정 생성 응답")
 public record CreateUserResponse (
         @Schema(description = "error code")
-        ErrorCode description,
+        ErrorCode result,
 
         @Schema(description = "생성된 유저명")
         @Nullable

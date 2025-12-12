@@ -18,10 +18,14 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long t_id;
+    @Column(name = "t_id")
+    private Long id;
 
     @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false)
+    private String nickname;
 
     @Column
     private Timestamp created_at;
