@@ -36,11 +36,11 @@ public class ChatControllerV1 {
             summary = "참여 중인 방 목록을 가져옵니다.",
             description = "유저가 참여 중인 채팅 방 목록을 가져옵니다."
     )
-    @GetMapping("/rooms")
-    public JoinedRoomListResponse chatRooms(
+    @GetMapping("/get-joined-rooms")
+    public JoinedRoomListResponse getJoinedRooms(
             @RequestHeader("Authorization") String authString
     ) {
-        return chatServiceV1.getJoinedRoomsByUserid(authString);
+        return chatServiceV1.getJoinedRoomsByUserId(authString);
     }
 
     @Operation(

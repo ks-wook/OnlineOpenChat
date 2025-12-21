@@ -154,7 +154,7 @@ public class AuthService {
                 throw new CustomException(ErrorCode.NOT_EXIST_USER);
             }
 
-            return new GetMyInfoResponse(ErrorCode.SUCCESS, user.get().getNickname());
+            return new GetMyInfoResponse(ErrorCode.SUCCESS, user.get().getId(), user.get().getNickname());
 
         } catch (Exception e) {
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, null);

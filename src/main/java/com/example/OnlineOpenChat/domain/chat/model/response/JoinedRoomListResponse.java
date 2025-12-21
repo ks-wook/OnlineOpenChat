@@ -1,8 +1,7 @@
 package com.example.OnlineOpenChat.domain.chat.model.response;
 
 import com.example.OnlineOpenChat.common.exception.ErrorCode;
-import com.example.OnlineOpenChat.domain.chat.model.Room;
-import com.example.OnlineOpenChat.domain.chat.model.RoomMember;
+import com.example.OnlineOpenChat.domain.chat.model.RoomDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
@@ -15,6 +14,6 @@ public record JoinedRoomListResponse (
         @Schema(description = "결과 값")
         ErrorCode result,
 
-        @Schema(description = "채팅방 이름 목록")
-        List<RoomMember> roomMembers
+        @Schema(description = "참여중인 채팅방 목록")
+        List<RoomDto> roomList
  ) {}
