@@ -34,7 +34,7 @@ public class ChatStreamRepository {
 
             RecordId recordId = redisTemplate.opsForStream().add(
                     StreamRecords.mapBacked(map)
-                            .withStreamKey(getStreamKey(message.getRoomId()))
+                            .withStreamKey(getStreamKey(message.getRoom().getId()))
             );
 
         } catch (Exception e) {

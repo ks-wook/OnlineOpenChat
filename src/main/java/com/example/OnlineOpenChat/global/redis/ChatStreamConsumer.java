@@ -12,7 +12,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.net.InetAddress;
-import java.util.Map;
 import java.util.UUID;
 
 @Component
@@ -47,21 +46,23 @@ public class ChatStreamConsumer {
 
         try {
             // 1) Stream 생성: dummy 메시지 추가 -> 스트림을 열기위한 용도
-            Map<String, String> initBody = Map.of("data", "init");
-
-            RecordId dummyId = redisTemplate.opsForStream().add(
-                    StreamRecords.mapBacked(initBody).withStreamKey(key)
-            );
+            //Map<String, String> initBody = Map.of("data", "init");
+//
+//            RecordId dummyId = redisTemplate.opsForStream().add(
+//                    StreamRecords.mapBacked(initBody).withStreamKey(key)
+//            );
 
             // 2) Consumer Group 생성
-            redisTemplate.opsForStream().createGroup(key, group);
+            redisTemplate.opsForStream().createGroup(
+                    key,
+                    ReadOffset.from("0-0"),
+                    group
+            );
 
             // 3) dummy 메시지 제거
-            redisTemplate.opsForStream().delete(key, dummyId);
+            // redisTemplate.opsForStream().delete(key, dummyId);
 
             log.info("Stream + ConsumerGroup initialized: {}", group);
-
-
 
 
         } catch (Exception e) {
@@ -76,6 +77,10 @@ public class ChatStreamConsumer {
     public void consume(MapRecord<String, String, String> record) {
         try {
             String json = record.getValue().get("data");
+
+            log.info("test");
+            log.info("[STREAM] consuming: {}", json);
+
             ChatMessage msg = objectMapper.readValue(json, ChatMessage.class);
 
             log.info("[STREAM] consumed: {}", msg);

@@ -7,6 +7,9 @@ public record GetMyInfoResponse (
         @Schema(description = "결과")
         ErrorCode result,
 
+        @Schema(description = "로그인된 유저의 Id 값")
+        Long userId,
+
         @Schema(description = "로그인된 유저의 닉네임")
         String nickname
 ){ }

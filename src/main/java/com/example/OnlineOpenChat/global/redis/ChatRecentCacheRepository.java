@@ -21,7 +21,7 @@ public class ChatRecentCacheRepository {
 
     public void addToRecent(ChatMessage message) {
         try {
-            String key = getRecentKey(message.getRoomId());
+            String key = getRecentKey(message.getRoom().getId());
             String json = objectMapper.writeValueAsString(message);
 
             redisTemplate.opsForList().rightPush(key, json);

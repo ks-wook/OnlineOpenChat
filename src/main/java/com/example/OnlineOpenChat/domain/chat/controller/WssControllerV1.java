@@ -2,12 +2,13 @@ package com.example.OnlineOpenChat.domain.chat.controller;
 
 import com.example.OnlineOpenChat.domain.chat.model.Message;
 import com.example.OnlineOpenChat.domain.chat.service.ChatServiceV1;
-import com.example.OnlineOpenChat.global.redis.ChatRedisPublisher;
+import com.example.OnlineOpenChat.global.redis.RedisMessage;
+import com.example.OnlineOpenChat.global.redis.publisher.ChatRedisPublisher;
+import com.example.OnlineOpenChat.global.redis.ChatStreamRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 
 @RequiredArgsConstructor
@@ -25,23 +26,32 @@ public class WssControllerV1 {
 
     /**
      * 채팅 메시지 처리
-     * @param from
+     * @param roomId
      * @param msg
      * @return
      */
-    @MessageMapping("/chat/message/{from}")
+    @MessageMapping("/chat/message/{roomId}")
     // @SendTo("/sub/chat")
     public void receivedMessage(
-            @DestinationVariable String from,
-            Message msg)
+            @DestinationVariable String roomId,
+            RedisMessage msg)
     {
-        log.info("Message Received -> From: {}, To: {}, msg: {}", from, msg.getTo(), msg.getMessage());
-        // chatServiceV1.saveChatMessage(msg);
-        // return msg;
+        log.info("Message Received -> roomId: {}, from: {}, msg: {}", roomId, msg.getSenderName(), msg.getMessage());
         
         // TODO : 메시지 Redis에 임시 저장
+        // TODO : 클라에서 받는 메시지 타입을 Chat메시지 형태로 변환해야함
+        // TEST =================================================
+       /* ChatMessage chatMessage = new ChatMessage();
+        chatMessage.setMessage("test");
+        chatMessage.setTimestamp(System.currentTimeMillis());
+        chatMessage.setRoomId(1L);
+        chatMessage.setUserId(1L);*/
+        // TEST =================================================
 
-        // 메시지 브로커에게 메시지 퍼블리싱
+        // 2) Redis Stream으로 실시간 채팅 로그 기록
+        // chatStreamRepository.addToStream(chatMessage);
+
+        // 3) 메시지 브로커에게 메시지 퍼블리싱
         publisher.publish(msg);
     }
 }

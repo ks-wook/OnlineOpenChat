@@ -1,8 +1,10 @@
 package com.example.OnlineOpenChat.config;
 
+import com.example.OnlineOpenChat.global.redis.subscriber.ChatRedisSubscriber;
+import com.example.OnlineOpenChat.global.redis.subscriber.NotificationRedisSubscriber;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -45,16 +47,28 @@ public class RedisConfig {
     @Bean
     public RedisMessageListenerContainer redisMessageListenerContainer(
             RedisConnectionFactory factory,
-            MessageListener chatRedisSubscriber
+            ChatRedisSubscriber chatSubscriber,
+            NotificationRedisSubscriber notificationSubscriber,
+            @Qualifier("chatMessageTopic") ChannelTopic chatMessageTopic,
+            @Qualifier("notificationTopic") ChannelTopic chatNotificationTopic
     ) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(factory);
-        container.addMessageListener(chatRedisSubscriber, new ChannelTopic("chat-topic"));
+
+        // 각 토픽에 맞는 리스너(구독자) 등록
+        container.addMessageListener(chatSubscriber, chatMessageTopic);
+        container.addMessageListener(notificationSubscriber, chatNotificationTopic);
+
         return container;
     }
 
-    @Bean
-    public ChannelTopic chatTopic() {
-        return new ChannelTopic("chat-topic");
+    @Bean("chatMessageTopic")
+    public ChannelTopic chatMessageTopic() {
+        return new ChannelTopic("chat-message");
+    }
+
+    @Bean("notificationTopic")
+    public ChannelTopic notificationTopic() {
+        return new ChannelTopic("chat-notification");
     }
 }

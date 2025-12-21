@@ -1,10 +1,12 @@
 package com.example.OnlineOpenChat.domain.chat.service;
 
 
+import com.example.OnlineOpenChat.common.Constants.RedisMessageType;
 import com.example.OnlineOpenChat.common.exception.CustomException;
 import com.example.OnlineOpenChat.common.exception.ErrorCode;
 import com.example.OnlineOpenChat.domain.chat.model.Message;
 import com.example.OnlineOpenChat.domain.chat.model.Room;
+import com.example.OnlineOpenChat.domain.chat.model.RoomDto;
 import com.example.OnlineOpenChat.domain.chat.model.RoomMember;
 import com.example.OnlineOpenChat.domain.chat.model.request.CreateRoomRequest;
 import com.example.OnlineOpenChat.domain.chat.model.response.ChatListResponse;
@@ -16,6 +18,8 @@ import com.example.OnlineOpenChat.domain.repository.RoomRepository;
 import com.example.OnlineOpenChat.domain.repository.UserRepository;
 import com.example.OnlineOpenChat.domain.repository.entity.User;
 import com.example.OnlineOpenChat.global.redis.ChatStreamRepository;
+import com.example.OnlineOpenChat.global.redis.RedisMessage;
+import com.example.OnlineOpenChat.global.redis.publisher.NotificationRedisPublisher;
 import com.example.OnlineOpenChat.security.auth.JWTProvider;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +36,9 @@ public class ChatServiceV1 {
     private final RoomMemberRepository roomMemberRepository;
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
+
+    private final NotificationRedisPublisher notificationRedisPublisher;
+
 
     /**
      * 최근의 채팅 메시지 조회 (테스트)
@@ -102,15 +109,27 @@ public class ChatServiceV1 {
             Room savedRoom = roomRepository.save(room);
 
             // 2) 방 멤버로 초대된 유저들 추가
+            List<Long> inviteeIds = new ArrayList<>();
+
             for (String inviteeName : request.participants()) {
                 User invitee = userRepository.findByNickname(inviteeName)
                         .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXIST_USER));
 
+                inviteeIds.add(invitee.getId());
                 RoomMember inviteeMember = userToRoomMember(invitee, savedRoom.getId());
                 roomMemberRepository.save(inviteeMember);
             }
 
-            // 3) 생성된 방 정보 반환
+            // 3) 방 멤버로 초대된 유저들에게 채팅방 구독 요청 알림 발송
+            RedisMessage notification = RedisMessage.builder()
+                    .type(RedisMessageType.INVITE)
+                    .targetUserIds(inviteeIds)
+                    .roomId(savedRoom.getId())
+                    .build();
+
+            notificationRedisPublisher.publishNotification(notification);
+
+            // 4) 생성된 방 정보 반환
             return new CreateRoomResponse(ErrorCode.SUCCESS, request.roomName(), savedRoom.getId());
 
         } catch (CustomException e) {
@@ -130,14 +149,12 @@ public class ChatServiceV1 {
      * @param authString
      * @return
      */
-    public JoinedRoomListResponse getJoinedRoomsByUserid(String authString) {
+    public JoinedRoomListResponse getJoinedRoomsByUserId(String authString) {
         try {
+            Long userId = JWTProvider.getUserIdAsLong(authString);
 
-            String userIdStr = JWTProvider.getUserId(authString);
-            Long userId = Long.parseLong(userIdStr);
-
-            List<RoomMember> roomMembers = roomMemberRepository.findByUserId(userId);
-            return new JoinedRoomListResponse(ErrorCode.SUCCESS, roomMembers);
+            List<RoomDto> roomDtoList = roomRepository.findRoomsByUserId(userId);
+            return new JoinedRoomListResponse(ErrorCode.SUCCESS, roomDtoList);
 
         } catch (Exception e) {
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, null);
