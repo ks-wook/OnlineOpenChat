@@ -25,6 +25,11 @@ public class RedisMessage {
     private Long roomId;
 
     /**
+     * 방 이름 (채팅방 초대시에만 사용)
+     */
+    private String roomName;
+
+    /**
      * 메시지 내용
      */
     private String message;

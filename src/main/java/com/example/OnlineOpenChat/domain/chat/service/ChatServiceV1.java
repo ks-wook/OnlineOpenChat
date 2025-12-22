@@ -125,6 +125,7 @@ public class ChatServiceV1 {
                     .type(RedisMessageType.INVITE)
                     .targetUserIds(inviteeIds)
                     .roomId(savedRoom.getId())
+                    .roomName(request.roomName())
                     .build();
 
             notificationRedisPublisher.publishNotification(notification);
