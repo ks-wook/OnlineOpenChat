@@ -14,6 +14,7 @@ public enum ErrorCode implements CodeInterface {
     USER_SAVED_FAILED(-2, "USER_SAVED_FAILED"),
     NOT_EXIST_USER(-3, "NOT_EXIST_USER"),
     MIS_MATCH_PASSWORD(-4, "MIS_MATCH_PASSWORD"),
+    ALREADY_FRIEND(-5, "ALREADY_FRIEND"),
 
     // -200 ~ JWT 인증 관련
     TOKEN_IS_INVALID(-200, "TOKEN_IS_INVALID"),

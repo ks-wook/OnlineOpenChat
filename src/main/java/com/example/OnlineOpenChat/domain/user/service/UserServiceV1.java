@@ -59,6 +59,12 @@ public class UserServiceV1 {
 
             if(user.isPresent()) {
                 Friend newFriend = new Friend(userId, user.get().getId());
+                
+                // 이미 친구로 등록되어 있는 지 검사
+                if(friendRepository.existsByUserIdAndFriendId(userId, user.get().getId())) {
+                    throw new CustomException(ErrorCode.ALREADY_FRIEND, "이미 친구로 등록된 유저입니다.");
+                }
+                
                 friendRepository.save(newFriend);
             } else {
                 throw new CustomException(ErrorCode.NOT_EXIST_USER, "존재하지 않는 유저입니다.");

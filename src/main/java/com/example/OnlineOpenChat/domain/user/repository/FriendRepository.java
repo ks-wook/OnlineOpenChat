@@ -26,4 +26,9 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
         where f.userId = :userId
     """)
     List<FriendDto> findFriendDto(@Param("userId") Long userId);
+
+    /**
+     * 특정 유저의 친구 관계 존재 여부 확인
+     */
+    boolean existsByUserIdAndFriendId(Long userId, Long friendId);
 }
