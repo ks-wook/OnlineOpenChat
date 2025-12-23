@@ -55,6 +55,9 @@ dependencies {
 
     // devTools
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // mongodb
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
 }
 
 tasks.named('test') {

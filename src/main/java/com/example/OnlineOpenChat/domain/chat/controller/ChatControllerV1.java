@@ -12,25 +12,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-@Tag(name = "Chata API", description = "V1 Chat API")
+@Tag(name = "Chat API", description = "V1 Chat API")
 @RestController
 @RequestMapping("/api/v1/chat")
 @RequiredArgsConstructor
 public class ChatControllerV1 {
 
     private final ChatServiceV1 chatServiceV1;
-
-    @Operation(
-            summary = "채팅 리스트를 가져옵니다.",
-            description = "가장 최근 10개의 채팅 리스트를 가져옵니다."
-    )
-    @GetMapping("/chat-list")
-    public ChatListResponse chatList(
-            @RequestParam("name") @Valid String to,
-            @RequestParam("from") @Valid String from
-    ) {
-        return chatServiceV1.chatList(from, to);
-    }
 
     @Operation(
             summary = "참여 중인 방 목록을 가져옵니다.",
@@ -44,16 +32,15 @@ public class ChatControllerV1 {
     }
 
     @Operation(
-            summary = "특정 방의 채팅 기록을 가져옵니다.",
+            summary = "특정 방의 최근 100개의 채팅 내역을 가져옵니다.",
             description = "방 ID와 제한된 개수의 채팅 기록을 가져옵니다."
     )
     @GetMapping("/rooms/{roomId}/messages")
     public ChatListResponse roomMessages(
             @PathVariable("roomId") Long roomId,
-            @RequestParam("limit") @Valid Integer limit,
             @RequestHeader("Authorization") String authString
     ) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return chatServiceV1.getRecentMessagesInRoom(roomId);
     }
 
     @Operation(

@@ -4,7 +4,6 @@ package com.example.OnlineOpenChat.domain.chat.service;
 import com.example.OnlineOpenChat.common.Constants.RedisMessageType;
 import com.example.OnlineOpenChat.common.exception.CustomException;
 import com.example.OnlineOpenChat.common.exception.ErrorCode;
-import com.example.OnlineOpenChat.domain.chat.model.Message;
 import com.example.OnlineOpenChat.domain.chat.model.Room;
 import com.example.OnlineOpenChat.domain.chat.model.RoomDto;
 import com.example.OnlineOpenChat.domain.chat.model.RoomMember;
@@ -12,15 +11,17 @@ import com.example.OnlineOpenChat.domain.chat.model.request.CreateRoomRequest;
 import com.example.OnlineOpenChat.domain.chat.model.response.ChatListResponse;
 import com.example.OnlineOpenChat.domain.chat.model.response.CreateRoomResponse;
 import com.example.OnlineOpenChat.domain.chat.model.response.JoinedRoomListResponse;
-import com.example.OnlineOpenChat.domain.repository.ChatRepository;
+import com.example.OnlineOpenChat.domain.chat.mongo.document.ChatMessage;
+import com.example.OnlineOpenChat.domain.chat.mongo.repository.ChatMessageRepository;
+import com.example.OnlineOpenChat.domain.chat.mongo.service.ChatMessageService;
 import com.example.OnlineOpenChat.domain.repository.RoomMemberRepository;
 import com.example.OnlineOpenChat.domain.repository.RoomRepository;
 import com.example.OnlineOpenChat.domain.repository.UserRepository;
 import com.example.OnlineOpenChat.domain.repository.entity.User;
-import com.example.OnlineOpenChat.global.redis.ChatStreamRepository;
 import com.example.OnlineOpenChat.global.redis.RedisMessage;
 import com.example.OnlineOpenChat.global.redis.publisher.NotificationRedisPublisher;
 import com.example.OnlineOpenChat.security.auth.JWTProvider;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -30,68 +31,15 @@ import java.util.*;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class ChatServiceV1 {
 
-    private final ChatRepository chatRepository;
     private final RoomMemberRepository roomMemberRepository;
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
 
     private final NotificationRedisPublisher notificationRedisPublisher;
-
-
-    /**
-     * 최근의 채팅 메시지 조회 (테스트)
-     * @param from
-     * @param to
-     * @return
-     */
-    public ChatListResponse chatList(String from, String to) {
-
-        // TODO : DB가 아니라 Redis등 채팅 로그를 일시적으로 담아두는 곳에서 채팅 내역을 받아온다.
-
-        /*
-        List<Chat> chats = chatRepository.findTop10BySenderOrReceiverOrderByTIDDesc(from, to);
-
-        // Entity -> DTO
-        List<Message> res = chats.stream()
-                .map(chat -> new Message(chat.getReceiver(), chat.getSender(), chat.getMessage()))
-                .collect(Collectors.toList());
-         */
-
-        Message mock = Message.builder().to("test2").from("test1").message("test message").build();
-        List<Message> messageList = new ArrayList<>();
-        messageList.add(mock);
-
-        return new ChatListResponse(messageList);
-    }
-
-
-
-    private final ChatStreamRepository chatRedisRepository;
-
-    /**
-     * Redis에 채팅 메시지 저장
-     * @param roomId
-     * @param message
-     */
-    public void saveMessage(Long roomId, Message message) {
-        // chatRedisRepository.saveMessage(roomId, message);
-    }
-
-    /**
-     * 가장 최근의 채팅 메시지 기록들 조회
-     * @param roomId
-     * @param limit
-     * @return
-     */
-    /*
-    public List<Message> getRecentMessages(Long roomId, int limit) {
-        // return chatRedisRepository.getRecentMessages(roomId, limit);
-    }
-
-     */
-
+    private final ChatMessageService chatMessageService;
 
     /**
      * 새로운 채팅 방 생성
@@ -162,5 +110,21 @@ public class ChatServiceV1 {
         }
 
     }
+
+    /**
+     * 채팅방의 최근 메시지 100개 조회
+     * @param roomId
+     * @return
+     */
+    public ChatListResponse getRecentMessagesInRoom(Long roomId) {
+        try {
+            List<ChatMessage> chatMessages = chatMessageService.getRecentMessages(roomId);
+            return new ChatListResponse(ErrorCode.SUCCESS, chatMessages);
+        } catch (Exception e) {
+            log.error("채팅방 최근 메시지 조회 실패", e);
+            return new ChatListResponse(ErrorCode.INTERNAL_SERVER_ERROR, null);
+        }
+    }
+
 }
 
