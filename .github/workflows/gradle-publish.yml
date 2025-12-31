@@ -2,7 +2,7 @@ name: Deploy Spring Boot to EC2 (ECR)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
 
 jobs:
   deploy:
