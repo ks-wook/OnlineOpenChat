@@ -2,9 +2,13 @@ package com.example.OnlineOpenChat.config;
 
 import com.example.OnlineOpenChat.global.redis.ChatStreamConsumer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.connection.stream.Consumer;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
@@ -17,6 +21,7 @@ import java.util.UUID;
 import static com.example.OnlineOpenChat.global.redis.Constants.CHAT_CONSUMER_GROUP;
 import static com.example.OnlineOpenChat.global.redis.Constants.CHAT_STREAM_KEY;
 
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class RedisStreamConfig {
@@ -34,6 +39,22 @@ public class RedisStreamConfig {
                 .build();
 
         var container = StreamMessageListenerContainer.create(redisConnectionFactory, options);
+
+        if (redisConnectionFactory instanceof LettuceConnectionFactory lettuce) {
+            RedisStandaloneConfiguration config =
+                    (RedisStandaloneConfiguration) lettuce.getStandaloneConfiguration();
+
+            log.info(
+                    "[RedisStreamConfig] Connected Redis -> host: {}, port: {}",
+                    config.getHostName(),
+                    config.getPort()
+            );
+        } else {
+            log.warn(
+                    "[RedisStreamConfig] RedisConnectionFactory is not LettuceConnectionFactory: {}",
+                    redisConnectionFactory.getClass().getName()
+            );
+        }
 
         // 로그성 이벤트 이므로 autoAck 사용하여 처리 -> 채팅 등의 실시간성 서비스에 적합
         container.receiveAutoAck(
