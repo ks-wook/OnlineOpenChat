@@ -42,22 +42,27 @@ jobs:
 
 
       # ✅ EC2 배포
-      # 1. 기존 컨테이너 & 도커 이미지 제거
-      # 2. 도커 이미지 pull
-      # 3. 도커 컨테이너 실행
-      - name: Deploy to EC2
+      # 1. Bastion Host를 통해 ec2 접속
+      # 2. 기존 컨테이너 & 도커 이미지 제거
+      # 3. 도커 이미지 pull
+      # 4. 도커 컨테이너 실행
+      - name: Deploy to Private EC2 via Bastion
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.EC2_HOST }}
+          host: ${{ secrets.BASTION_HOST }}
           username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.BASTION_SSH_KEY }}
           script: |
-            docker stop ${{ secrets.DOCKER_CONTAINERNAME }} || true
-            docker rm ${{ secrets.DOCKER_CONTAINERNAME }} || true
-            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest
-            
-            docker run -d \
-              --name ${{ secrets.DOCKER_CONTAINERNAME }} \
-              -p 7002:7002 \
-              --restart always \
-              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest
+            ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_HOST }} << 'EOF'
+              docker stop ${{ secrets.DOCKER_CONTAINERNAME }} || true
+              docker rm ${{ secrets.DOCKER_CONTAINERNAME }} || true
+      
+              docker pull \
+                ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest
+      
+              docker run -d \
+                --name ${{ secrets.DOCKER_CONTAINERNAME }} \
+                --env-file /home/ec2-user/.env \
+                -p 7002:7002 \
+                --restart always \
+                ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest
