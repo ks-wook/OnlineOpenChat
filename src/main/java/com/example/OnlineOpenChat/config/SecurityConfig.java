@@ -31,6 +31,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/auth/login", // 로그인
                                 "/api/v1/auth/create-user", // 회원가입
+                                
+                                "/system/health_check", // aws 헬스 체크
 
                                 "/ws-stomp/**", // 웹소켓 핸드쉐이크
 
