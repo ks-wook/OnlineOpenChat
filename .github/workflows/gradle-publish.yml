@@ -59,7 +59,7 @@ jobs:
       # =========================
       # 5. ALB Target Group Rolling Deploy
       # =========================
-      - name: Rolling Deploy via ALB Target Group (Final)
+      - name: Rolling Deploy via ALB Target Group
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.BASTION_HOST }}
