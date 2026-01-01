@@ -54,10 +54,11 @@ jobs:
 
       # ✅ EC2 배포
       # 1. Bastion Host를 통해 ec2 접속
+      # 2. 2대의 Ec2를 돌며 타겟그룹에서 인스턴스를 제외하며 배포작업 시작
       # 2. 기존 컨테이너 & 도커 이미지 제거
       # 3. 도커 이미지 pull
       # 4. 도커 컨테이너 실행
-      - name: Deploy to Private EC2 via Bastion
+      - name: Rolling Deploy via ALB Target Group
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.BASTION_HOST }}
@@ -65,24 +66,58 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             chmod 600 /home/ec2-user/web-talk-private-key.pem
-            
-            ssh -i /home/ec2-user/web-talk-private-key.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_HOST }} << 'EOF'
-              # 1️⃣ ECR 로그인 (매 배포 시 안전하게 실행)
-              aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
-              | docker login --username AWS --password-stdin \
-                ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com || true
-
-            
-              docker stop ${{ secrets.DOCKER_CONTAINERNAME }} || true
-              docker rm ${{ secrets.DOCKER_CONTAINERNAME }} || true
       
-              docker pull \
-                ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest
+            for HOST in \
+              ${{ secrets.EC2_PRIVATE_IP_1 }} \
+              ${{ secrets.EC2_PRIVATE_IP_2 }}
+            do
+              echo "===== Rolling deploy start: $HOST ====="
       
-              docker run -d \
-                --name ${{ secrets.DOCKER_CONTAINERNAME }} \
-                --env-file /opt/web-talk-chat-server/dev.env \
-                -p 7002:7002 \
-                --restart always \
-                ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest
-                
+              # 1️⃣ Target Group에서 제외
+              aws elbv2 deregister-targets \
+                --target-group-arn ${{ secrets.TARGET_GROUP_ARN }} \
+                --targets Id=$HOST
+      
+              echo "Waiting for connection draining..."
+              sleep 40
+      
+              # 2️⃣ EC2 배포
+              ssh -i /home/ec2-user/web-talk-private-key.pem \
+                -o StrictHostKeyChecking=no \
+                ec2-user@$HOST << 'EOF'
+      
+                  aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+                  | docker login --username AWS --password-stdin \
+                    ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com || true
+      
+                  docker stop ${{ secrets.DOCKER_CONTAINERNAME }} || true
+                  docker rm ${{ secrets.DOCKER_CONTAINERNAME }} || true
+      
+                  docker pull \
+                    ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest
+      
+                  docker run -d \
+                    --name ${{ secrets.DOCKER_CONTAINERNAME }} \
+                    --env-file /home/ec2-user/opt/web-talk-chat-server/dev.env \
+                    -p 7002:7002 \
+                    --restart always \
+                    ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest
+                EOF
+      
+              # 3️⃣ 헬스 체크 대기
+              echo "Waiting for health check..."
+              until aws elbv2 describe-target-health \
+                --target-group-arn ${{ secrets.TARGET_GROUP_ARN }} \
+                --targets Id=$HOST \
+                | grep -q healthy
+              do
+                sleep 10
+              done
+      
+              # 4️⃣ Target Group 재등록
+              aws elbv2 register-targets \
+                --target-group-arn ${{ secrets.TARGET_GROUP_ARN }} \
+                --targets Id=$HOST
+      
+              echo "===== Rolling deploy completed: $HOST ====="
+            done
