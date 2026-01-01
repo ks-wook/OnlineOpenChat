@@ -72,52 +72,51 @@ jobs:
               ${{ secrets.EC2_PRIVATE_IP_2 }}
             do
               echo "===== Rolling deploy start: $HOST ====="
-      
+            
               # 1️⃣ Target Group에서 제외
               aws elbv2 deregister-targets \
-                --target-group-arn ${{ secrets.TARGET_GROUP_ARN }} \
+                --target-group-arn *** \
                 --targets Id=$HOST
-      
+            
               echo "Waiting for connection draining..."
               sleep 40
-      
+            
               # 2️⃣ EC2 배포
               ssh -i /home/ec2-user/web-talk-private-key.pem \
                 -o StrictHostKeyChecking=no \
                 ec2-user@$HOST << 'EOF'
-      
-                  aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
-                  | docker login --username AWS --password-stdin \
-                    ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com || true
-      
-                  docker stop ${{ secrets.DOCKER_CONTAINERNAME }} || true
-                  docker rm ${{ secrets.DOCKER_CONTAINERNAME }} || true
-      
-                  docker pull \
-                    ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest
-      
-                  docker run -d \
-                    --name ${{ secrets.DOCKER_CONTAINERNAME }} \
-                    --env-file /home/ec2-user/opt/web-talk-chat-server/dev.env \
-                    -p 7002:7002 \
-                    --restart always \
-                    ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest
-                EOF
-      
+            aws ecr get-login-password --region *** \
+            | docker login --username AWS --password-stdin \
+              ***.dkr.ecr.***.amazonaws.com || true
+            
+            docker stop *** || true
+            docker rm *** || true
+            
+            docker pull \
+              ***.dkr.ecr.***.amazonaws.com/***:latest
+            
+            docker run -d \
+              --name *** \
+              --env-file /home/ec2-user/opt/***/dev.env \
+              -p 7002:7002 \
+              --restart always \
+              ***.dkr.ecr.***.amazonaws.com/***:latest
+            EOF
+            
               # 3️⃣ 헬스 체크 대기
               echo "Waiting for health check..."
               until aws elbv2 describe-target-health \
-                --target-group-arn ${{ secrets.TARGET_GROUP_ARN }} \
+                --target-group-arn *** \
                 --targets Id=$HOST \
                 | grep -q healthy
               do
                 sleep 10
               done
-      
+            
               # 4️⃣ Target Group 재등록
               aws elbv2 register-targets \
-                --target-group-arn ${{ secrets.TARGET_GROUP_ARN }} \
+                --target-group-arn *** \
                 --targets Id=$HOST
-      
+            
               echo "===== Rolling deploy completed: $HOST ====="
             done
