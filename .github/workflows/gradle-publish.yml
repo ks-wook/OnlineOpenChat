@@ -59,14 +59,14 @@ jobs:
       # =========================
       # 5. ALB Target Group Rolling Deploy
       # =========================
-      - name: Rolling Deploy via ALB Target Group
+      - name: Rolling Deploy via ALB Target Group (Fail-fast)
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.BASTION_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            set -e
+            set -euo pipefail
       
             chmod 600 /home/ec2-user/web-talk-private-key.pem
       
@@ -76,26 +76,37 @@ jobs:
             do
               echo "===== Rolling deploy start: $HOST ====="
       
+              # 1️⃣ Target Group에서 제외 (실패 시 즉시 종료)
               aws elbv2 deregister-targets \
                 --target-group-arn ${{ secrets.TARGET_GROUP_ARN }} \
                 --targets Id=$HOST
       
+              echo "Waiting for connection draining..."
               sleep 40
       
-              ssh -i web-talk-private-key.pem \
+              # 2️⃣ EC2 배포 (여기서 실패하면 CI 실패)
+              ssh -i /home/ec2-user/web-talk-private-key.pem \
                 -o StrictHostKeyChecking=no \
                 ec2-user@$HOST "
+                  set -euo pipefail
+      
+                  echo '[INFO] Login to ECR'
                   aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
                   | docker login --username AWS --password-stdin \
-                    ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com || true &&
+                    ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
       
-                  docker stop ${{ secrets.DOCKER_CONTAINERNAME }} || true &&
-                  docker rm ${{ secrets.DOCKER_CONTAINERNAME }} || true &&
-                  docker image prune -f &&
+                  echo '[INFO] Stop & remove existing container'
+                  docker stop ${{ secrets.DOCKER_CONTAINERNAME }} || true
+                  docker rm   ${{ secrets.DOCKER_CONTAINERNAME }} || true
       
+                  echo '[INFO] Cleanup dangling images'
+                  docker image prune -f
+      
+                  echo '[INFO] Pull new image'
                   docker pull \
-                    ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest &&
+                    ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest
       
+                  echo '[INFO] Run new container'
                   docker run -d \
                     --name ${{ secrets.DOCKER_CONTAINERNAME }} \
                     --env-file /home/ec2-user/opt/${{ secrets.DOCKER_IMAGE_NAME }}/dev.env \
@@ -104,6 +115,8 @@ jobs:
                     ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest
                 "
       
+              # 3️⃣ 헬스 체크 통과 대기 (통과 못 하면 CI 실패)
+              echo "Waiting for health check..."
               until aws elbv2 describe-target-health \
                 --target-group-arn ${{ secrets.TARGET_GROUP_ARN }} \
                 --targets Id=$HOST \
@@ -112,10 +125,10 @@ jobs:
                 sleep 10
               done
       
+              # 4️⃣ Target Group 재등록
               aws elbv2 register-targets \
                 --target-group-arn ${{ secrets.TARGET_GROUP_ARN }} \
                 --targets Id=$HOST
       
               echo "===== Rolling deploy completed: $HOST ====="
             done
-
