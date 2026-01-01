@@ -87,6 +87,7 @@ jobs:
               ssh -i /home/ec2-user/web-talk-private-key.pem \
                 -o StrictHostKeyChecking=no \
                 ec2-user@$HOST << 'EOF'
+                
                 aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
                 | docker login --username AWS --password-stdin \
                   ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com || true
@@ -124,4 +125,5 @@ jobs:
       
               echo "===== Rolling deploy completed: $HOST ====="
             done
+
 
