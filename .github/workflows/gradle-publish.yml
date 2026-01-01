@@ -115,7 +115,7 @@ jobs:
               do
                 STATE=$(aws elbv2 describe-target-health \
                   --target-group-arn ${{ secrets.TARGET_GROUP_ARN }} \
-                  --targets Id=$INSTANCE_ID \
+                  --targets Id=$INSTANCE_ID,Port=${{ secrets.DOCKER_CONTAINERPORT }} \
                   --query 'TargetHealthDescriptions[0].TargetHealth.State' \
                   --output text)
       
