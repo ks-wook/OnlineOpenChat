@@ -71,8 +71,8 @@ jobs:
             chmod 600 /home/ec2-user/web-talk-private-key.pem
       
             for HOST in \
-              ${{ secrets.PRIVATE_EC2_IP_1 }} \
-              ${{ secrets.PRIVATE_EC2_IP_2 }}
+              ${{ secrets.EC2_PRIVATE_IP_1 }} \
+              ${{ secrets.EC2_PRIVATE_IP_2 }}
             do
               echo "===== Rolling deploy start: $HOST ====="
       
