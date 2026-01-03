@@ -6,6 +6,7 @@ import com.example.OnlineOpenChat.domain.auth.model.request.LoginRequest;
 import com.example.OnlineOpenChat.domain.auth.model.response.CreateUserResponse;
 import com.example.OnlineOpenChat.domain.auth.model.response.GetMyInfoResponse;
 import com.example.OnlineOpenChat.domain.auth.model.response.LoginResponse;
+import com.example.OnlineOpenChat.domain.auth.model.response.LogoutResponse;
 import com.example.OnlineOpenChat.domain.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -69,6 +70,19 @@ public class AuthControllerV1 {
             @RequestHeader("Authorization") String authString
     ) {
         return authService.getMyInfoByAccessToken(authString);
+    }
+
+    @Operation(
+            summary = "로그아웃 처리",
+            description = "유저의 로그아웃을 진행"
+    )
+    @GetMapping("/logout")
+    public LogoutResponse logout(
+            @RequestHeader("Authorization") String authString,
+            HttpServletRequest httpServletRequest,
+            HttpServletResponse httpServletResponse
+    ) {
+        return authService.logout(authString, httpServletRequest, httpServletResponse);
     }
 
     @Operation(

@@ -5,6 +5,8 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.OnlineOpenChat.common.Constants.Constants;
+import com.example.OnlineOpenChat.common.exception.CustomException;
+import com.example.OnlineOpenChat.common.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -104,7 +106,7 @@ public class JWTProvider {
         try {
             String extractedToken = extractToken(token);
             if (extractedToken == null) {
-                return null;
+                throw new CustomException(ErrorCode.TOKEN_IS_INVALID, "유효하지 않은 토큰입니다.");
             }
 
             DecodedJWT decoded = JWT.require(Algorithm.HMAC256(secreteKey))
@@ -112,8 +114,8 @@ public class JWTProvider {
                     .verify(extractedToken);
             String subject = decoded.getSubject();
             return Long.parseLong(subject);
-        } catch (Exception e) {
-            return null;
+        } catch (CustomException e) {
+            throw new CustomException(e.getErrorCode(), "유효하지 않은 토큰입니다.");
         }
     }
 

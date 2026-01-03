@@ -7,6 +7,7 @@ import com.example.OnlineOpenChat.domain.auth.model.request.LoginRequest;
 import com.example.OnlineOpenChat.domain.auth.model.response.CreateUserResponse;
 import com.example.OnlineOpenChat.domain.auth.model.response.GetMyInfoResponse;
 import com.example.OnlineOpenChat.domain.auth.model.response.LoginResponse;
+import com.example.OnlineOpenChat.domain.auth.model.response.LogoutResponse;
 import com.example.OnlineOpenChat.domain.repository.AuthRefreshTokenRepository;
 import com.example.OnlineOpenChat.domain.repository.UserRepository;
 import com.example.OnlineOpenChat.domain.repository.entity.AuthRefreshToken;
@@ -15,6 +16,7 @@ import com.example.OnlineOpenChat.domain.repository.entity.UserCredentials;
 import com.example.OnlineOpenChat.security.auth.JWTProvider;
 import com.example.OnlineOpenChat.util.CookieUtil;
 import com.example.OnlineOpenChat.util.DateUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +73,7 @@ public class AuthService {
             return new CreateUserResponse(e.getErrorCode(), null);
         }
         catch (Exception e) {
+            log.error("회원가입 실패: {}", e.getMessage());
             throw new CustomException(ErrorCode.USER_SAVED_FAILED);
         }
     }
@@ -142,24 +145,55 @@ public class AuthService {
         try {
 
             Long userId = JWTProvider.getUserIdAsLong(authString);
-            log.info("Get My Info 요청 UserId: {}", userId);
-            if(userId == null) {
-                throw new CustomException(ErrorCode.TOKEN_IS_INVALID);
-            }
 
             Optional<User> user = userRepository.findById(userId);
-            log.info("Get My Info User: {}", user);
 
             if(user.isEmpty()) {
                 throw new CustomException(ErrorCode.NOT_EXIST_USER);
             }
 
-            return new GetMyInfoResponse(ErrorCode.SUCCESS, user.get().getId(), user.get().getNickname());
+            return new GetMyInfoResponse(ErrorCode.SUCCESS, user.get().getId(), user.get().getNickname(), user.get().getStatusText());
 
         } catch (Exception e) {
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, null);
         }
 
+    }
+
+    /**
+     * 로그아웃 처리
+     * @param authString
+     * @param httpServletRequest
+     * @param httpServletResponse
+     */
+    public LogoutResponse logout(String authString, HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) {
+        try {
+            Long userId = JWTProvider.getUserIdAsLong(authString);
+
+            String RefreshToken = CookieUtil.getRefreshTokenFromRequest(httpServletRequest);
+
+            // DB에 저장된 RefreshToken 만료 처리
+            Optional<AuthRefreshToken> refreshToken = authRefreshTokenRepository.findByRefreshToken(RefreshToken);
+
+            if(refreshToken.isPresent()) {
+                AuthRefreshToken token = refreshToken.get();
+                token.setIsRevoked(true);
+                authRefreshTokenRepository.save(token);
+            }
+            else {
+                throw new CustomException(ErrorCode.REFRESH_TOKEN_IS_NOT_FOUND, "로그아웃 처리할 RefreshToken이 존재하지 않습니다.");
+            }
+
+            // 클라이언트 쿠키에 저장된 RefreshToken 삭제 처리
+            CookieUtil.deleteRefreshTokenCookie(httpServletResponse);
+
+            return new LogoutResponse(ErrorCode.SUCCESS);
+
+        } catch (CustomException e) {
+            throw new CustomException(e.getErrorCode());
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -173,12 +207,12 @@ public class AuthService {
 
     /**
      * 새 유저 생성
-     * @param name
+     * @param loginId
      * @return
      */
-    private User newUser(String name, String defaultNickname) {
+    private User newUser(String loginId, String defaultNickname) {
         return User.builder()
-                .loginId(name)
+                .loginId(loginId)
                 .nickname(defaultNickname)
                 .created_at(new Timestamp(System.currentTimeMillis()))
                 .build();
