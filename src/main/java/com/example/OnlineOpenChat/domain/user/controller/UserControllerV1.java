@@ -1,8 +1,10 @@
 package com.example.OnlineOpenChat.domain.user.controller;
 
 import com.example.OnlineOpenChat.domain.user.model.request.AddFriendRequest;
+import com.example.OnlineOpenChat.domain.user.model.request.UpdateStatusTextRequest;
 import com.example.OnlineOpenChat.domain.user.model.response.AddFriendResponse;
 import com.example.OnlineOpenChat.domain.user.model.response.GetFriendListResponse;
+import com.example.OnlineOpenChat.domain.user.model.response.UpdateStatusTextResponse;
 import com.example.OnlineOpenChat.domain.user.model.response.UserSearchResponse;
 import com.example.OnlineOpenChat.domain.user.service.UserServiceV1;
 import io.swagger.v3.oas.annotations.Operation;
@@ -52,5 +54,17 @@ public class UserControllerV1 {
             @RequestHeader("Authorization") String authString
     ) {
         return userServiceV1.getFriendListByUserId(authString);
+    }
+
+    @Operation(
+            summary = "상태메시지 변경 요청",
+            description = "유저의 상태메시지를 변경합니다."
+    )
+    @PostMapping("/update-status-text")
+    public UpdateStatusTextResponse updateStatusMessage(
+            @RequestHeader("Authorization") String authString,
+            @RequestBody UpdateStatusTextRequest request
+            ) {
+        return userServiceV1.updateStatusText(authString, request);
     }
 }

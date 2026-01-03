@@ -11,5 +11,8 @@ public record GetMyInfoResponse (
         Long userId,
 
         @Schema(description = "로그인된 유저의 닉네임")
-        String nickname
+        String nickname,
+
+        @Schema(description = "로그인된 유저의 상태메시지")
+        String statusText
 ){ }

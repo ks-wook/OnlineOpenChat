@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * 프론트엔드로 전달할 친구 dto 값
  * @param id
  * @param nickname
+ * @param statusText
  */
 public record FriendDto(
         @Schema(description = "친구 ID")

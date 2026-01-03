@@ -36,7 +36,7 @@ public class User {
     /**
      * 유저 상태 메시지
      */
-    @Column(name="status_text", nullable = false)
+    @Column(name="status_text", nullable = true)
     private String statusText;
 
     @Column
@@ -47,5 +47,9 @@ public class User {
 
     public void setCredentials(UserCredentials credentials) {
         this.userCredentials = credentials;
+    }
+
+    public void updateStatusText(String statusText) {
+        this.statusText = statusText;
     }
 }
