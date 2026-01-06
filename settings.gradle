@@ -1,1 +1,6 @@
 rootProject.name = 'OnlineOpenChat'
+include(
+        "chat-server-application",
+        "chat-server-infrastructure-redis",
+        "chat-server-infrastructure-mongodb"
+)
