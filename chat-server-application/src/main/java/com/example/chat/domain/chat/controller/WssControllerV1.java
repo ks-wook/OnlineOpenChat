@@ -1,10 +1,10 @@
 package com.example.chat.domain.chat.controller;
 
-import com.example.chat.domain.chat.service.ChatServiceV1;
-import com.example.chat.infrastructure.dto.RedisMessage;
-import com.example.chat.infrastructure.mongodb.document.ChatMessage;
-import com.example.chat.infrastructure.redis.publisher.ChatRedisPublisher;
-import com.example.chat.infrastructure.redis.ChatStreamRepository;
+import com.example.chat.domain.chat.service.ChatServiceImpl;
+import com.example.chat.dto.WebSocketTextMessage;
+import com.example.chat.dto.ChatMessage;
+import com.example.chat.redis.publisher.ChatRedisPublisher;
+import com.example.chat.redis.ChatStreamRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Controller;
  */
 public class WssControllerV1 {
 
-    private final ChatServiceV1 chatServiceV1;
+    private final ChatServiceImpl chatServiceImpl;
     private final ChatRedisPublisher publisher;
 
     private final ChatStreamRepository chatStreamRepository;
@@ -36,7 +36,7 @@ public class WssControllerV1 {
     // @SendTo("/sub/chat")
     public void receivedMessage(
             @DestinationVariable String roomId,
-            RedisMessage msg)
+            WebSocketTextMessage msg)
     {
         log.info("Message Received -> roomId: {}, from: {}, msg: {}", roomId, msg.getSenderName(), msg.getMessage());
 

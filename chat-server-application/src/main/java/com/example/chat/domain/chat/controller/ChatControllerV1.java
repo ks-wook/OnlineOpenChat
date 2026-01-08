@@ -1,10 +1,10 @@
 package com.example.chat.domain.chat.controller;
 
-import com.example.chat.domain.chat.model.request.CreateRoomRequest;
-import com.example.chat.domain.chat.model.response.ChatListResponse;
-import com.example.chat.domain.chat.model.response.CreateRoomResponse;
-import com.example.chat.domain.chat.model.response.JoinedRoomListResponse;
-import com.example.chat.domain.chat.service.ChatServiceV1;
+import com.example.chat.model.request.CreateRoomRequest;
+import com.example.chat.model.response.ChatListResponse;
+import com.example.chat.model.response.CreateRoomResponse;
+import com.example.chat.model.response.JoinedRoomListResponse;
+import com.example.chat.domain.chat.service.ChatServiceImpl;
 import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ChatControllerV1 {
 
-    private final ChatServiceV1 chatServiceV1;
+    private final ChatServiceImpl chatServiceImpl;
 
     @Operation(
             summary = "참여 중인 방 목록을 가져옵니다.",
@@ -27,7 +27,7 @@ public class ChatControllerV1 {
     public JoinedRoomListResponse getJoinedRooms(
             @RequestHeader("Authorization") String authString
     ) {
-        return chatServiceV1.getJoinedRoomsByUserId(authString);
+        return chatServiceImpl.getJoinedRoomsByUserId(authString);
     }
 
     @Operation(
@@ -39,7 +39,7 @@ public class ChatControllerV1 {
             @PathVariable("roomId") Long roomId,
             @RequestHeader("Authorization") String authString
     ) {
-        return chatServiceV1.getRecentMessagesInRoom(roomId);
+        return chatServiceImpl.getRecentMessagesInRoom(roomId);
     }
 
     @Operation(
@@ -51,6 +51,6 @@ public class ChatControllerV1 {
             @RequestHeader("Authorization") String authString,
             @RequestBody CreateRoomRequest request
     ) {
-        return chatServiceV1.createRoom(authString, request);
+        return chatServiceImpl.createRoom(authString, request);
     }
 }

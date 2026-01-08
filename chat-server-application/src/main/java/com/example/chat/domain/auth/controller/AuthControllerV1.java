@@ -1,13 +1,13 @@
 package com.example.chat.domain.auth.controller;
 
 
-import com.example.chat.domain.auth.model.request.CreateUserRequest;
-import com.example.chat.domain.auth.model.request.LoginRequest;
-import com.example.chat.domain.auth.model.response.CreateUserResponse;
-import com.example.chat.domain.auth.model.response.GetMyInfoResponse;
-import com.example.chat.domain.auth.model.response.LoginResponse;
-import com.example.chat.domain.auth.model.response.LogoutResponse;
-import com.example.chat.domain.auth.service.AuthService;
+import com.example.chat.model.request.CreateUserRequest;
+import com.example.chat.model.request.LoginRequest;
+import com.example.chat.model.response.CreateUserResponse;
+import com.example.chat.model.response.GetMyInfoResponse;
+import com.example.chat.model.response.LoginResponse;
+import com.example.chat.model.response.LogoutResponse;
+import com.example.chat.domain.auth.service.AuthServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
@@ -28,7 +28,7 @@ import java.util.Optional;
 @Slf4j
 public class AuthControllerV1 {
 
-    private final AuthService authService;
+    private final AuthServiceImpl authService;
 
     @Operation(
             summary = "새로운 유저를 생성합니다.",

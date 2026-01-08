@@ -1,6 +1,6 @@
 package com.example.chat.security.user;
 
-import com.example.chat.domain.repository.entity.User;
+import com.example.chat.model.entity.User;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

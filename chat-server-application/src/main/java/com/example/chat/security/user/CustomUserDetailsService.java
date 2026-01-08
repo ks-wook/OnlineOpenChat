@@ -1,6 +1,6 @@
 package com.example.chat.security.user;
 
-import com.example.chat.domain.repository.UserRepository;
+import com.example.chat.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

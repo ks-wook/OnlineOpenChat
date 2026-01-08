@@ -1,10 +1,10 @@
 package com.example.chat.domain.user.controller;
 
-import com.example.chat.domain.user.model.request.AddFriendRequest;
-import com.example.chat.domain.user.model.request.UpdateNicknameRequest;
-import com.example.chat.domain.user.model.request.UpdateStatusTextRequest;
-import com.example.chat.domain.user.model.response.*;
-import com.example.chat.domain.user.service.UserServiceV1;
+import com.example.chat.model.request.AddFriendRequest;
+import com.example.chat.model.request.UpdateNicknameRequest;
+import com.example.chat.model.request.UpdateStatusTextRequest;
+import com.example.chat.domain.user.service.UserServiceImpl;
+import com.example.chat.model.response.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserControllerV1 {
 
-    private final UserServiceV1 userServiceV1;
+    private final UserServiceImpl userServiceImpl;
 
     @Operation(
             summary = "User Name List Search",
@@ -28,7 +28,7 @@ public class UserControllerV1 {
             @PathVariable("name") String nickname,
             @RequestParam(name = "myName") String myName
     ) {
-        return userServiceV1.searchUser(nickname, myName);
+        return userServiceImpl.searchUser(nickname, myName);
     }
     
     @Operation(
@@ -40,7 +40,7 @@ public class UserControllerV1 {
             @RequestHeader("Authorization") String authString,
             @RequestBody AddFriendRequest request
     ) {
-        return userServiceV1.addFriend(authString, request);
+        return userServiceImpl.addFriend(authString, request);
     }
 
     @Operation(
@@ -51,7 +51,7 @@ public class UserControllerV1 {
     public GetFriendListResponse getFriends(
             @RequestHeader("Authorization") String authString
     ) {
-        return userServiceV1.getFriendListByUserId(authString);
+        return userServiceImpl.getFriendListByUserId(authString);
     }
 
     @Operation(
@@ -63,7 +63,7 @@ public class UserControllerV1 {
             @RequestHeader("Authorization") String authString,
             @RequestBody UpdateStatusTextRequest request
             ) {
-        return userServiceV1.updateStatusText(authString, request);
+        return userServiceImpl.updateStatusText(authString, request);
     }
 
     @Operation(
@@ -75,6 +75,6 @@ public class UserControllerV1 {
             @RequestHeader("Authorization") String authString,
             @RequestBody UpdateNicknameRequest request
     ) {
-        return userServiceV1.updateNickname(authString, request);
+        return userServiceImpl.updateNickname(authString, request);
     }
 }

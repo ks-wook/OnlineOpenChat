@@ -46,7 +46,5 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
 
     // 서브 모듈
-    implementation project(":chat-server-persistence")
     implementation project(":chat-server-domain")
-    implementation project(":chat-server-websocket")
 }

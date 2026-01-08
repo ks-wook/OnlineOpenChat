@@ -35,6 +35,7 @@ public class SecurityConfig {
                                 "/system/health_check", // aws 헬스 체크
 
                                 "/ws-stomp/**", // 웹소켓 핸드쉐이크
+                                "/ws/**", // 웹소켓
 
                                 /**
                                  * Swagger 문서들
