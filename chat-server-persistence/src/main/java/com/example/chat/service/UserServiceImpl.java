@@ -37,7 +37,7 @@ public class UserServiceImpl implements UserService {
     public UserSearchResponse searchUser(String nickname, String myName) {
 
         try {
-            List<String> userList = userRepository.findNameByNicknameMatch(nickname, myName);
+            List<String> userList = userRepository.findNameByNicknameMatchV2(nickname, myName);
 
             return new UserSearchResponse(ErrorCode.SUCCESS, userList);
         } catch (CustomException e) {
