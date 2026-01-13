@@ -42,3 +42,5 @@ out/
 chat-local-test/dev.env
 *.env
 *.sql
+chat-local-test/logs
+chat-local-test
