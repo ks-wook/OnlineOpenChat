@@ -97,6 +97,7 @@ jobs:
                   docker run -d \
                     --name ${{ secrets.DOCKER_CONTAINERNAME }} \
                     --env-file /opt/${{ secrets.DOCKER_IMAGE_NAME }}/dev.env \
+                    -e SPRING_PROFILES_ACTIVE=docker \
                     -p 7002:7002 \
                     -v /var/log/app:/var/log/app \
                     --restart always \
