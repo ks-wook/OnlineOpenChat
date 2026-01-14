@@ -45,6 +45,12 @@ dependencies {
     // mongodb
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
 
+    // Actuator (메트릭 엔드포인트 제공)
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Prometheus 연동 (Micrometer Registry)
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
     // 서브 모듈
     implementation project(":chat-server-domain")
     implementation project(":chat-server-security")

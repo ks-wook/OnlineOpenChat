@@ -1,5 +1,14 @@
 server:
   port: ${SERVER_PORT}
+  tomcat:
+    mbeanregistry:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "prometheus"
 
 springdoc:
   swagger-ui:
