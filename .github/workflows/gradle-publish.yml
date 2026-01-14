@@ -58,7 +58,6 @@ jobs:
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest
 
 
-
       # =========================
       # 5. ALB Target Group Rolling Deploy
       # =========================
