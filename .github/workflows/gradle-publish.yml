@@ -29,33 +29,6 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
 
-      # =========================
-      # 3. Docker ARM64 빌드
-      # =========================
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image (ARM64)
-        run: |
-          docker buildx build \
-            --platform linux/arm64 \
-            -t ${{ secrets.DOCKER_IMAGE_NAME }}:latest \
-            --load .
-
-      # =========================
-      # 4. ECR Push
-      # =========================
-      - name: Tag & Push Docker image to ECR
-        run: |
-          docker tag \
-            ${{ secrets.DOCKER_IMAGE_NAME }}:latest \
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest
-
-          docker push \
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.DOCKER_IMAGE_NAME }}:latest
 
 
       # =========================
@@ -138,11 +111,17 @@ jobs:
       
               # 4️⃣ 헬스 체크 대기
               echo "Waiting for target to become healthy..."
-      
+              
               MAX_WAIT=300
               INTERVAL=10
               ELAPSED=0
-      
+              
+              HEALTHY_COUNT=0
+              UNHEALTHY_COUNT=0
+              
+              REQUIRED_HEALTHY=3
+              MAX_UNHEALTHY=5
+              
               while true
               do
                 STATE=$(aws elbv2 describe-target-health \
@@ -150,24 +129,42 @@ jobs:
                   --targets Id=$INSTANCE_ID,Port=${{ secrets.DOCKER_CONTAINERPORT }} \
                   --query 'TargetHealthDescriptions[0].TargetHealth.State' \
                   --output text)
-      
+              
                 echo "Current target state: $STATE"
-      
-                if [ "$STATE" = "healthy" ]; then
-                  echo "Target is healthy"
-                  break
-                fi
-      
-                if [ "$STATE" = "unhealthy" ]; then
-                  echo "Target became unhealthy"
-                  exit 1
-                fi
-      
+              
+                case "$STATE" in
+                  healthy)
+                    HEALTHY_COUNT=$((HEALTHY_COUNT + 1))
+                    UNHEALTHY_COUNT=0
+                    echo "Healthy count: $HEALTHY_COUNT/$REQUIRED_HEALTHY"
+              
+                    if [ "$HEALTHY_COUNT" -ge "$REQUIRED_HEALTHY" ]; then
+                      echo "Target is stable healthy"
+                      break
+                    fi
+                    ;;
+                  unhealthy)
+                    UNHEALTHY_COUNT=$((UNHEALTHY_COUNT + 1))
+                    HEALTHY_COUNT=0
+                    echo "Unhealthy count: $UNHEALTHY_COUNT/$MAX_UNHEALTHY"
+              
+                    if [ "$UNHEALTHY_COUNT" -ge "$MAX_UNHEALTHY" ]; then
+                      echo "Target consistently unhealthy"
+                      exit 1
+                    fi
+                    ;;
+                  *)
+                    echo "Target state is $STATE (waiting)"
+                    HEALTHY_COUNT=0
+                    UNHEALTHY_COUNT=0
+                    ;;
+                esac
+              
                 if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
                   echo "Health check timeout"
                   exit 1
                 fi
-      
+              
                 sleep $INTERVAL
                 ELAPSED=$((ELAPSED + INTERVAL))
               done
