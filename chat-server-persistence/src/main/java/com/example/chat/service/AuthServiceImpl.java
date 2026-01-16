@@ -55,8 +55,7 @@ public class AuthServiceImpl implements AuthService {
             }
 
             // 2) 유저 정보 등록
-            // 유저의 기본 닉네임은 "UserName" + #{랜덤숫자4자리} 형태로 지정
-            String defaultNickname = "UserName" + (int)(Math.random() * 9000) + 1000;
+            String defaultNickname = request.nickname() + (int)(Math.random() * 9000) + 1000;
             User newUser = this.newUser(request.loginId(), defaultNickname);
 
             UserCredentials newCredentials = this.newUserCredentials(request.password(), newUser);
