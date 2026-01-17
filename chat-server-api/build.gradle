@@ -54,4 +54,5 @@ dependencies {
     // 서브 모듈
     implementation project(":chat-server-domain")
     implementation project(":chat-server-security")
+    implementation project(":chat-server-persistence")
 }

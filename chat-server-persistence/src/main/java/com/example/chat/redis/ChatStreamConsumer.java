@@ -64,7 +64,6 @@ public class ChatStreamConsumer {
     /**
      * 채팅 로그 데이터 소비 (가져와서 DB에 기록)
      */
-    @Scheduled(fixedDelay = 300)
     public void consume(MapRecord<String, String, String> record) {
         try {
             String json = record.getValue().get("data");
